@@ -1,5 +1,0 @@
-ADD #5, 3
-MOV #0, @2 ; comsimdsmds
-JMP -2; dsjds dsiocnndic
-DAT -1
-SPL
