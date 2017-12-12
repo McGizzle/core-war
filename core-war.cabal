@@ -34,9 +34,12 @@ library
     , split 
     , time
     , containers
+    , ilist
   exposed-modules:
       Parser 
     , MARS 
+    , Utils
+    , Instructions
   default-language: Haskell2010
 
 executable core-war-exe

@@ -1,29 +1,30 @@
 module MARS where
+
 import Control.Monad
 import Control.Monad.Reader
+import Control.Monad.State
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TVar
 import Control.Concurrent.STM.TQueue
 import Data.Time
 import Data.Map as Map
+import Data.List as DL
+import Data.List.Index
+import Data.Either
 import Parser
-
-type AppT = ReaderT Data IO
-type Memory = TVar (Map Int Int)
-data Data = Data {
-  prog         :: Program,
-  aliveThreads :: TVar [ThreadId],
-  queue        :: TQueue ThreadId,
-  memory       :: Memory
-}
+import Utils
 
 run :: [Program] -> UTCTime -> IO ()
 run progs endTime = do
-  mem <- liftIO $ atomically $ newTVar Map.empty 
   queue <- liftIO $ atomically newTQueue
   threads <- liftIO $ atomically $ newTVar [] 
-  ids <- mapM (\ p -> forkIO $ runThread p queue mem threads) progs
+  mem <- liftIO $ atomically $ initMem $ indexed progs
+  ids <- mapM (\ (i,p) -> 
+         forkFinally  
+           (runThread queue mem (i*1000)) 
+           (\ _ -> print "Thread died")) 
+         (indexed progs) 
   liftIO $ atomically $ writeTVar threads ids
   addToQueue threads queue endTime
 
@@ -35,28 +36,19 @@ addToQueue threads queue endTime = do
   unless (time >= endTime) $ addToQueue threads queue endTime 
   return ()
 
-runThread :: Program -> TQueue ThreadId -> Memory -> TVar [ThreadId] -> IO () 
-runThread p q mem threads = do
+runThread :: TQueue ThreadId -> Memory -> ProgramCounter -> IO () 
+runThread q mem pc = do
   let info = Data {
-      prog = p,
       queue = q,
-      memory = mem,
-      aliveThreads = threads
+      memory = mem
   }
-  runReaderT runProg info
+  runStateT (runReaderT runProg info) pc
   return ()
 
 runProg :: AppT ()
 runProg = do
-  p <- asks prog
-  loopProg p
-
-loopProg :: Program -> AppT ()
-loopProg [] = runProg
-loopProg (x:xs) = do
-  checkQueue
-  liftIO $ print $ show x
-  loopProg xs
+  id <- checkQueue
+  liftIO $ print $ "Thread ID: " ++ show id
 
 checkQueue :: AppT ()
 checkQueue = do
@@ -64,4 +56,4 @@ checkQueue = do
   id <- liftIO $ atomically $ peekTQueue q
   myId <- liftIO myThreadId
   unless (myId == id) checkQueue
-  return ()
+  
