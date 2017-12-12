@@ -11,7 +11,7 @@ import Data.Maybe
 import Utils
 import Parser
 
-runInstruction :: AppT ()
+runInstruction :: AppT Bool
 runInstruction = do
   ins <- nextInstruction
   lift $ lift $ put ins 
@@ -34,25 +34,22 @@ writeMemory op = do
   liftIO $ atomically $ modifyTVar' mem op
   return ()
 
-matchIns :: Instruction -> AppT ()
-matchIns I0          = return ()
+matchIns :: Instruction -> AppT Bool
+matchIns I0          = return False
 matchIns (I1 op)     = matchOp0 op
 matchIns (I2 op a)   = matchOp1 op a
 matchIns (I3 op a b) = matchOp2 op a b
 
-matchOp0 :: OpCode -> AppT ()
-matchOp0 DAT = return ()
-
-matchOp1 DAT a = return ()
-matchOp1 JMP a = return ()
-matchOp1 SPL a = return ()
-
-matchOp2 MOV a b = return ()
-matchOp2 CMP a b = return ()
-matchOp2 ADD a b = return ()
-matchOp2 SUB a b = return ()
-matchOp2 JMZ a b = return ()
-matchOp2 DJN a b = return ()
+matchOp0 DAT = return False
+matchOp1 DAT a = return False
+matchOp1 SPL a = return False
+matchOp1 JMP a = jmp a 
+matchOp2 MOV a b = mov a b
+matchOp2 CMP a b = return False
+matchOp2 ADD a b = return False
+matchOp2 SUB a b = return False
+matchOp2 JMZ a b = jmz a b
+matchOp2 DJN a b = djn a b
 
 matchField :: Field -> AppT Int
 matchField (Direct a)  = do
@@ -74,10 +71,10 @@ getBField I0          = return 0
 
 mov :: Field -> Field -> AppT Bool
 mov a b = do 
-  aAddr <- matchField a
-  bAddr <- matchField b
-  aConts <- readMemory $ Map.lookup aAddr
-  writeMemory $ Map.insert bAddr (fromJust aConts) 
+  a' <- matchField a
+  b' <- matchField b
+  aConts <- readMemory $ Map.lookup a'
+  writeMemory $ Map.insert b' (fromJust aConts) 
   return True
 
 add :: Field -> Field -> AppT Bool
@@ -87,5 +84,22 @@ jmp :: Field -> AppT Bool
 jmp a = do
   addr <- matchField a
   lift $ put addr
+  return True
+
+jmz :: Field -> Field -> AppT Bool
+jmz = cndJmp (== 0)
+
+jmn :: Field -> Field -> AppT Bool
+jmn = cndJmp (/= 0)
+
+djn :: Field -> Field -> AppT Bool
+djn = cndJmp (\ x -> (x - 1) == 0) 
+
+cndJmp :: (Int -> Bool) -> Field -> Field -> AppT Bool
+cndJmp cnd a b = do
+  b' <- matchField b
+  when (cnd b') $ do
+    a' <- matchField a
+    lift $ put a'
   return True
 
