@@ -28,7 +28,6 @@ data Instruction = I3 OpCode Field Field
                  | I0
   deriving(Read,Show)
 
---type Task = [Instructions]
 type Program = [Instruction]
 
 readAddr :: String -> Field
@@ -47,7 +46,7 @@ parseLine [a]     = I1 (read a)
 parseLine [a,b]   = I2 (read a) (readAddr b)  
 parseLine [a,b,c] = I3 (read a) (readAddr $ init b) (readAddr c)
 
---parseProg :: FilePath -> IO [Instruction]
+parseProg :: FilePath -> IO Program
 parseProg f = do
   conts <- readFile f
   return $ parseLine <$> words <$> filterComments <$> lines (toUpper <$> conts)
