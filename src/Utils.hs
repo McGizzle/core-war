@@ -11,12 +11,13 @@ import Data.Map as Map
 import Data.List.Index
 import Parser
 
-type AppT = ReaderT Data (StateT ProgramCounter IO)
+type AppT = ReaderT MarsData (StateT ProgramCounter (StateT Instruction IO))
+
 type Memory = TVar (Map Int Instruction)
 
 type ProgramCounter = Int
 
-data Data = Data {
+data MarsData = MarsData {
   queue  :: TQueue ThreadId,
   memory :: Memory
 }

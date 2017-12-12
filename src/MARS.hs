@@ -38,11 +38,11 @@ addToQueue threads queue endTime = do
 
 runThread :: TQueue ThreadId -> Memory -> ProgramCounter -> IO () 
 runThread q mem pc = do
-  let info = Data {
+  let info = MarsData {
       queue = q,
       memory = mem
   }
-  runStateT (runReaderT runProg info) pc
+  runStateT (runStateT (runReaderT runProg info) pc) I0
   return ()
 
 runProg :: AppT ()
