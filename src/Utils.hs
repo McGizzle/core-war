@@ -30,7 +30,7 @@ initMem progs = newTVar mem
     mem = Prelude.foldl1 Map.union (fmap addrProgs progs ++ [iMem]) 
 
 addrProgs :: (Int,Program) -> Map Int Instruction
-addrProgs (i,prog) = Map.fromList $ fmap (first $ (+) ((i-1)*1000)) (indexed prog)
+addrProgs (i,prog) = Map.fromList $ fmap (\ (x,y) -> (i*1000+x,y)) (zip [0..] prog)
 
 addTask :: ProgramCounter -> AppT ()
 addTask pc = do

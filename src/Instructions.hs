@@ -16,7 +16,8 @@ runInstruction :: AppT Bool
 runInstruction = do
   ins <- nextInstruction
   lift $ lift $ put ins
-  lift $ lift $ lift $ tell $ "Executing Instruction: " ++ show ins 
+  id <- liftIO myThreadId
+  lift $ lift $ lift $ tell $ show id ++" Executing Instruction: "++ show ins ++"\n" 
   res <- matchIns ins
   endTask
   return res

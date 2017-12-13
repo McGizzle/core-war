@@ -30,7 +30,7 @@ run progs = do
          forkFinally  
            (runThread queue mem (i*1000)) 
            (\ _ -> print "Thread died")) 
-         (indexed progs) 
+         (zip [0..] progs) 
   liftIO $ atomically $ writeTVar threads ids
   addToQueue threads queue endTime
 
@@ -48,7 +48,6 @@ runThread q mem pc = do
       queue = q,
       memory = mem
   }
-  putStrLn $ "PC: " ++ show pc
   (_,log) <- runWriterT (runStateT (runStateT (runReaderT runProg info) [pc]) I0)
   putStrLn log
   return ()
