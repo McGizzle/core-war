@@ -1,5 +1,11 @@
 module Main where
-
+import System.Environment
+import Parser
+import MARS
 
 main :: IO ()
-main = print "nada"
+main = do
+  files <- getArgs
+  progs <- traverse parseProg files
+  run progs
+
