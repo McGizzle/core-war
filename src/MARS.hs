@@ -3,20 +3,26 @@ module MARS where
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
+import Control.Monad.Writer
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TVar
 import Control.Concurrent.STM.TQueue
 import Data.Time
+import Data.Time.Clock
 import Data.Map as Map
 import Data.List as DL
 import Data.List.Index
 import Data.Either
 import Parser
 import Utils
+import Instructions
 
-run :: [Program] -> UTCTime -> IO ()
-run progs endTime = do
+run :: [Program] -> IO ()
+run progs = do
+  now <- getCurrentTime
+  let day = fromInteger 86400 :: NominalDiffTime
+  let endTime = addUTCTime day now
   queue <- liftIO $ atomically newTQueue
   threads <- liftIO $ atomically $ newTVar [] 
   mem <- liftIO $ atomically $ initMem $ indexed progs
@@ -42,13 +48,17 @@ runThread q mem pc = do
       queue = q,
       memory = mem
   }
-  runStateT (runStateT (runReaderT runProg info) pc) I0
+  putStrLn $ "PC: " ++ show pc
+  (_,log) <- runWriterT (runStateT (runStateT (runReaderT runProg info) [pc]) I0)
+  putStrLn log
   return ()
 
 runProg :: AppT ()
 runProg = do
-  id <- checkQueue
-  liftIO $ print $ "Thread ID: " ++ show id
+  --checkQueue
+  alive <- runInstruction
+  when alive runProg
+  return ()
 
 checkQueue :: AppT ()
 checkQueue = do
