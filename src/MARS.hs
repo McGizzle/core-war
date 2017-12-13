@@ -20,9 +20,6 @@ import Instructions
 
 run :: [Program] -> IO ()
 run progs = do
-  now <- getCurrentTime
-  let day = fromInteger 86400 :: NominalDiffTime
-  let endTime = addUTCTime day now
   queue <- liftIO $ atomically newTQueue
   threads <- liftIO $ atomically $ newTVar [] 
   mem <- liftIO $ atomically $ initMem $ indexed progs
@@ -31,8 +28,15 @@ run progs = do
            (runThread queue mem (i*1000)) 
            (\ _ -> print "Thread died")) 
          (zip [0..] progs) 
-  liftIO $ atomically $ writeTVar threads ids
-  addToQueue threads queue endTime
+  now <- getCurrentTime
+  let gameLength = fromInteger 5 :: NominalDiffTime
+  let endTime = addUTCTime gameLength now
+  loop endTime
+    where 
+      loop endTime = do
+        now <- getCurrentTime
+        unless (now > endTime) $ loop endTime
+        return ()
 
 addToQueue :: TVar [ThreadId] -> TQueue ThreadId -> UTCTime -> IO ()
 addToQueue threads queue endTime = do
