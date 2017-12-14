@@ -19,8 +19,9 @@ type Memory = TVar (Map Int Instruction)
 type ProgramCounter = Int
 
 data MarsData = MarsData {
-  queue  :: TQueue ThreadId,
-  memory :: Memory
+  queue   :: TQueue ThreadId,
+  memory  :: Memory,
+  memSize :: Int
 }
 
 initMem :: [(Int, Program)] -> STM Memory

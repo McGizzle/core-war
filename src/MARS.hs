@@ -29,7 +29,7 @@ run progs = do
            (\ _ -> print "Thread died")) 
          (zip [0..] progs) 
   now <- getCurrentTime
-  let gameLength = fromInteger 5 :: NominalDiffTime
+  let gameLength = fromInteger 60 :: NominalDiffTime
   let endTime = addUTCTime gameLength now
   loop endTime
     where 
@@ -48,9 +48,11 @@ addToQueue threads queue endTime = do
 
 runThread :: TQueue ThreadId -> Memory -> ProgramCounter -> IO () 
 runThread q mem pc = do
+  mem' <- liftIO $ atomically $ readTVar mem
   let info = MarsData {
       queue = q,
-      memory = mem
+      memory = mem,
+      memSize = Map.size mem'
   }
   (_,log) <- runWriterT (runStateT (runStateT (runReaderT runProg info) [pc]) I0)
   putStrLn log
