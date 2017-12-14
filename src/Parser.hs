@@ -2,12 +2,25 @@ module Parser where
 import System.IO
 import Data.List.Split
 import Data.Char
+import Data.Functor
 
 data AddrMode a = Direct a
                 | Indirect a 
                 | Immediate a
                 | AutoDecrement a 
   deriving(Show,Read) 
+
+instance Functor AddrMode where
+    fmap f (Direct a)        = Direct (f a)
+    fmap f (Indirect a)      = Indirect (f a)
+    fmap f (Immediate a)     = Immediate (f a)
+    fmap f (AutoDecrement a) = AutoDecrement (f a)
+
+
+swap (Indirect a)      = Direct a
+swap (Immediate a)     = Direct a
+swap (AutoDecrement a) = Direct a
+
 
 type Field = AddrMode Int
 
