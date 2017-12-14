@@ -9,6 +9,7 @@ import Control.Concurrent.STM
 import Control.Concurrent.STM.TVar
 import Data.Map as Map
 import Data.Maybe
+import Data.Function.Between.Lazy
 import Utils
 import Parser
 
@@ -25,18 +26,20 @@ runInstruction = do
 nextInstruction :: AppT Instruction
 nextInstruction = do
   pc <- getPc
-  ins <- readMemory (Map.lookup pc)
-  return $ fromJust ins
-
-readMemory :: (MonadReader MarsData m, MonadIO m) => (Map Int Instruction -> b) -> m b
-readMemory op = do
+  readMemory pc
+  
+readMemory :: Int -> AppT Instruction
+readMemory key = do
   mem <- asks memory
+  size <- asks memSize
   mem' <- liftIO $ atomically $ readTVar mem
-  return $ op mem'
+  return $ fromJust $ Map.lookup (key `mod` size) mem'
 
-writeMemory op = do
+writeMemory :: Int -> Instruction -> AppT ()
+writeMemory key ins = do
   mem <- asks memory
-  liftIO $ atomically $ modifyTVar' mem op
+  size <- asks memSize
+  liftIO $ atomically $ modifyTVar' mem $ Map.insert (key `mod` size) ins
   return ()
 
 matchIns :: Instruction -> AppT Bool
@@ -62,35 +65,26 @@ matchField (Direct a)  = do
   return $ pc + a
 matchField (Indirect a) = do 
   pc <- getPc
-  nextIns <- readMemory $ Map.lookup (pc + a)
-  nextB <- getBField (fromJust nextIns) 
-  curIns <- lift $ lift get
-  curB <- getBField curIns
-  return (nextB + curB)
-matchField (Immediate a)     = matchField $ Direct a 
+  ins <- lift $ lift get 
+  matchField $ getBField ins 
+matchField (Immediate a)     = return a 
 matchField (AutoDecrement a) = matchField $ Indirect (a-1) 
 
-getBField :: Instruction -> AppT Int
-getBField (I3 _ _ b) = matchField b   
-getBField (I2 _ b)   = matchField b
-getBField _          = return 0
+getBField :: Instruction -> AddrMode Int
+getBField (I3 _ _ b) = swap b   
+getBField (I2 _ b)   = swap b
+getBField _          = Direct 0
 
---updateBField :: Int -> Instruction -> AppT Instruction
-updateBField mod (I3 x y b) = return $ I3 x y (modField mod b)
-updateBField mod (I2 x b) = return $ I2 x (modField mod b) 
-
-modField :: (t -> a) -> AddrMode t -> AddrMode a
-modField mod (Direct a) = Direct (mod a)
-modField mod (Indirect a) = Indirect (mod a)
-modField mod (Immediate a) = Immediate (mod a)
-modField mod (AutoDecrement a) = AutoDecrement (mod a)
+updateBField :: (Int -> Int) -> Instruction -> AppT Instruction
+updateBField mod (I3 x y b) = return $ I3 x y (fmap mod b)
+updateBField mod (I2 x b) = return $ I2 x (fmap mod b) 
 
 mov :: Field -> Field -> AppT Bool
 mov a b = do 
   a' <- matchField a
   b' <- matchField b
-  aConts <- readMemory $ Map.lookup a'
-  writeMemory $ Map.insert b' (fromJust aConts) 
+  aConts <- readMemory a'
+  writeMemory b' aConts 
   updatePc
   return True
 
@@ -103,8 +97,8 @@ sub = replace (-)
 replace mod a b = do
   a' <- matchField a
   b' <- matchField b
-  ins <- readMemory $ Map.lookup b'
-  newIns <- updateBField (mod a') (fromJust ins)
+  ins <- readMemory b'
+  newIns <- updateBField (mod a') ins
   updatePc
   return True
 
@@ -147,3 +141,4 @@ cndJmp cnd a b = do
     putPc a'
   else updatePc
   return True
+
