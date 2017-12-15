@@ -15,10 +15,12 @@ import Parser
 
 runInstruction :: AppT Bool
 runInstruction = do
+  liftIO $ threadDelay 3000
   ins <- nextInstruction
   lift $ lift $ put ins
   id <- liftIO myThreadId
-  lift $ lift $ lift $ tell $ show id ++" Executing Instruction: "++ show ins ++"\n" 
+  printIns ins
+  --lift $ lift $ lift $ tell $ show id ++" Executing Instruction:"++ show ins ++"\n" 
   res <- matchIns ins
   endTask
   return res
@@ -44,11 +46,10 @@ writeMemory key ins = do
 
 matchIns :: Instruction -> AppT Bool
 matchIns I0          = return True
-matchIns (I1 op)     = matchOp0 op
+--matchIns (I1 op)     = matchOp0 op
 matchIns (I2 op a)   = matchOp1 op a
 matchIns (I3 op a b) = matchOp2 op a b
 
-matchOp0 DAT = return False
 matchOp1 DAT _ = return False
 matchOp1 SPL a = spl a 
 matchOp1 JMP a = jmp a 
@@ -65,7 +66,7 @@ matchField (Direct a)  = do
   return $ pc + a
 matchField (Indirect a) = do 
   pc <- getPc
-  ins <- lift $ lift get 
+  ins <- readMemory (pc + a)
   matchField $ getBField ins 
 matchField (Immediate a)     = return a 
 matchField (AutoDecrement a) = matchField $ Indirect (a-1) 
@@ -81,24 +82,28 @@ updateBField mod (I2 x b) = return $ I2 x (fmap mod b)
 
 mov :: Field -> Field -> AppT Bool
 mov a b = do 
-  a' <- matchField a
   b' <- matchField b
-  aConts <- readMemory a'
-  writeMemory b' aConts 
+  case a of
+    (Immediate _) -> writeMemory b' $ I2 DAT a
+    _             -> do    
+      a' <- matchField a
+      aConts <- readMemory a'
+      writeMemory b' aConts 
   updatePc
   return True
 
 add :: Field -> Field -> AppT Bool
-add = replace (+) 
+add = arith (+) 
 
 sub :: Field -> Field -> AppT Bool
-sub = replace (-)
+sub = arith (-)
 
-replace mod a b = do
+arith mod a b = do
   a' <- matchField a
   b' <- matchField b
   ins <- readMemory b'
   newIns <- updateBField (mod a') ins
+  writeMemory b' newIns
   updatePc
   return True
 
