@@ -16,7 +16,7 @@ instance Functor AddrMode where
     fmap f (Immediate a)     = Immediate (f a)
     fmap f (AutoDecrement a) = AutoDecrement (f a)
 
-
+swap (Direct a)        = Direct a
 swap (Indirect a)      = Direct a
 swap (Immediate a)     = Direct a
 swap (AutoDecrement a) = Direct a
