@@ -1,5 +1,7 @@
-module Utils where
+ {-# LANGUAGE OverloadedStrings #-}
 
+module Utils where
+import System.Console.ANSI 
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
@@ -21,17 +23,29 @@ type ProgramCounter = Int
 data MarsData = MarsData {
   queue   :: TQueue ThreadId,
   memory  :: Memory,
-  memSize :: Int
+  memSize :: Int,
+  colour  :: Color
 }
+
+colours = [Red,Blue,Green,Yellow,White]
+
+printIns :: Instruction -> AppT ()
+printIns ins = do
+  clr <- asks colour
+  id <- liftIO myThreadId
+  liftIO $ setSGR [SetColor Foreground Vivid clr]
+  liftIO $ putStrLn $ (show id) ++ "Executing Instruction: " ++ (show ins) 
+  liftIO $ setSGR [Reset]
+  return ()
 
 initMem :: [(Int, Program)] -> STM Memory
 initMem progs = newTVar mem 
   where 
-    iMem = Map.fromList $ zip [0..8000] (replicate 8000 $ I2 DAT (Direct 0))
+    iMem = Map.fromList $ zip [0..50] (replicate 50 $ I2 DAT (Direct 0))
     mem = Prelude.foldl1 Map.union (fmap addrProgs progs ++ [iMem]) 
 
 addrProgs :: (Int,Program) -> Map Int Instruction
-addrProgs (i,prog) = Map.fromList $ fmap (\ (x,y) -> (i*1000+x,y)) (zip [0..] prog)
+addrProgs (i,prog) = Map.fromList $ fmap (\ (x,y) -> (i*10+x,y)) (zip [0..] prog)
 
 addTask :: ProgramCounter -> AppT ()
 addTask pc = do
