@@ -76,7 +76,7 @@ The various maps (of programs and the initial memory) are folded togther
 Here the programs are converted into maps
 
 >addrProgs :: (Int,Program) -> Map Int Instruction
->addrProgs (i,prog) = Map.fromList $ fmap (first $ (+) (i*10)) (zip [0..] prog)
+>addrProgs (i,prog) = Map.fromList $ fmap (first $ (+) (i*1000)) (zip [0..] prog)
 
 Monad Stack Helpers
 These handy functions help clean up the code.
