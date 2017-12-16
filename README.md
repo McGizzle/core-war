@@ -1,12 +1,13 @@
-# core-war
-An implementation of [core-war] built with Haskell.
+# core-wars
+
+An implementation of [core-wars](http://www.corewars.org/) built with Haskell.
 
 ## About
 
-Core-War is game which pits competing programs against eachother by creating a virtual machine for them to run in.
+Core-Wars is a game which pitts competing programs against eachother by creating a virtual machine for them to run in.
 The programs are written in an Assembly Language named RedCode.
 
-This program is written a [lierate haskell]() program. Therefore an explanation of the how it works is written among the code.
+This program is written as a [lierate haskell](https://wiki.haskell.org/Literate_programming) program. Therefore an explanation of the how it works is written among the code.
 There are numerous design decisions to be made when writing a MARs controller for core-war, and these are detailed in the source.
 
 ## Building & Running
