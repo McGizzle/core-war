@@ -42,6 +42,7 @@ library
     , MARS 
     , Utils
     , Instructions
+    , RedCode
   default-language: Haskell2010
 
 executable core-war-exe

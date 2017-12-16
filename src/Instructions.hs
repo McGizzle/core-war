@@ -11,16 +11,15 @@ import Data.Map as Map
 import Data.Maybe
 import Data.Function.Between.Lazy
 import Utils
-import Parser
+import RedCode 
 
 runInstruction :: AppT Bool
 runInstruction = do
-  liftIO $ threadDelay 3000
+  liftIO $ threadDelay 300000
   ins <- nextInstruction
   lift $ lift $ put ins
   id <- liftIO myThreadId
   printIns ins
-  --lift $ lift $ lift $ tell $ show id ++" Executing Instruction:"++ show ins ++"\n" 
   res <- matchIns ins
   endTask
   return res
@@ -46,13 +45,14 @@ writeMemory key ins = do
 
 matchIns :: Instruction -> AppT Bool
 matchIns I0          = return True
---matchIns (I1 op)     = matchOp0 op
+matchIns (I1 op)     = matchOp0 op
 matchIns (I2 op a)   = matchOp1 op a
 matchIns (I3 op a b) = matchOp2 op a b
 
-matchOp1 DAT _ = return False
-matchOp1 SPL a = spl a 
-matchOp1 JMP a = jmp a 
+matchOp0 _       = return True
+matchOp1 DAT _   = return False
+matchOp1 SPL a   = spl a 
+matchOp1 JMP a   = jmp a 
 matchOp2 MOV a b = mov a b
 matchOp2 CMP a b = cmp a b
 matchOp2 ADD a b = add a b 
