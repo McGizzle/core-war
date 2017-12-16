@@ -1,0 +1,7 @@
+SUB #5, 3
+MOV #0, @2
+JMP -2
+DAT -1
+; hello world!! :P
+SPL 3
+MOV 0, 1
