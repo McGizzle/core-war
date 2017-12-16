@@ -23,7 +23,7 @@
 
 The Meaty part of the program (it isnt really so meaty)
 
-Here we load the memory and the fork off all the necessary threads.
+Here we load the memory and fork off all the necessary threads (one per program).
 
 >run :: [Program] -> IO ()
 >run progs = do

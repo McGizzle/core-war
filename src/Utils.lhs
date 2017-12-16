@@ -16,6 +16,12 @@
 >import Data.List.Index
 >import RedCode 
 
+The execution monad
+Writer -> for logging
+State  -> List of program counters
+State  -> The current instruction, just makes things a little easier to manage
+Reader -> The read-only state each thread shares, because the memory is a TVar it can be stored here. 
+
 >type AppT = ReaderT MarsData (StateT [ProgramCounter] (StateT Instruction (WriterT String IO)))
 
 >type Memory = TVar (Map Int Instruction)
@@ -61,7 +67,7 @@ Memory of size 8000 is created, it is loaded with DAT's
 >initMem :: [(Int, Program)] -> STM Memory
 >initMem progs = newTVar mem 
 >  where 
->    iMem = Map.fromList $ zip [0..50] (replicate 50 $ I2 DAT (Direct 0))
+>    iMem = Map.fromList $ zip [0..8000] (replicate 80000 $ I2 DAT (Direct 0))
 
 The various maps (of programs and the initial memory) are folded togther 
 
